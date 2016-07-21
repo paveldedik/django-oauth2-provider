@@ -9,8 +9,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from oauth2.models import Client
 from . import constants, scope
 
+
+_django_version = tuple([int(v) for v in django.get_version().split('.')])
+
+
 def HttpResponse(content, mimetype, **kwargs):
-    if '1.7' in django.get_version():
+    if _django_version >= (1, 7, 0):
         return django.http.HttpResponse(content, content_type=mimetype, **kwargs)
     else:
         return django.http.HttpResponse(content, mimetype=mimetype, **kwargs)
