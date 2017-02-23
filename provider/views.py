@@ -1,13 +1,21 @@
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_hooks()
+from future.builtins import object
 import json
 import urlparse
 import django
-# from django.http import HttpResponse
 from django.http import HttpResponseRedirect, QueryDict
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView
 from django.core.exceptions import ObjectDoesNotExist
-from oauth2.models import Client
+from .oauth2.models import Client
 from . import constants, scope
+
+try:
+   from urllib import parse as urllib_parse
+except ImportError:
+    import urlparse as urllib_parse
 
 
 _django_version = tuple([int(v) for v in django.get_version().split('.')])
@@ -81,7 +89,7 @@ class Mixin(object):
         """
         Clear all OAuth related data from the session store.
         """
-        for key in request.session.keys():
+        for key in list(request.session.keys()):
             if key.startswith(constants.SESSION_KEY):
                 del request.session[key]
 
@@ -265,7 +273,7 @@ class Authorize(OAuthView, Mixin):
 
         try:
             client, data = self._validate_client(request, data)
-        except OAuthError, e:
+        except OAuthError as e:
             return self.error_response(request, e.args[0], status=400)
 
         authorization_form = self.get_authorization_form(request, client,
@@ -308,7 +316,7 @@ class Redirect(OAuthView, Mixin):
         Return an error response to the client with default status code of
         *400* stating the error as outlined in :rfc:`5.2`.
         """
-        return HttpResponse(json.dumps(error), mimetype=mimetype,
+        return HttpResponse(json.dumps(error), content_type=mimetype,
                 status=status, **kwargs)
 
     def get(self, request):
@@ -330,7 +338,7 @@ class Redirect(OAuthView, Mixin):
 
         redirect_uri = data.get('redirect_uri', None) or client.redirect_uri
 
-        parsed = urlparse.urlparse(redirect_uri)
+        parsed = urllib_parse.urlparse(redirect_uri)
 
         query = QueryDict('', mutable=True)
 
@@ -346,7 +354,7 @@ class Redirect(OAuthView, Mixin):
 
         parsed = parsed[:4] + (query.urlencode(), '')
 
-        redirect_uri = urlparse.ParseResult(*parsed).geturl()
+        redirect_uri = urllib_parse.ParseResult(*parsed).geturl()
 
         self.clear_data(request)
 
@@ -473,7 +481,7 @@ class AccessToken(OAuthView, Mixin):
         Return an error response to the client with default status code of
         *400* stating the error as outlined in :rfc:`5.2`.
         """
-        return HttpResponse(json.dumps(error), mimetype=mimetype,
+        return HttpResponse(json.dumps(error), content_type=mimetype,
                 status=status, **kwargs)
 
     def access_token_response(self, access_token):
@@ -498,7 +506,7 @@ class AccessToken(OAuthView, Mixin):
             pass
 
         return HttpResponse(
-            json.dumps(response_data), mimetype='application/json'
+            json.dumps(response_data), content_type='application/json'
         )
 
     def authorization_code(self, request, data, client):
@@ -606,5 +614,5 @@ class AccessToken(OAuthView, Mixin):
 
         try:
             return handler(request, request.POST, client)
-        except OAuthError, e:
+        except OAuthError as e:
             return self.error_response(e.args[0])
