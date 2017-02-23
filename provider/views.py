@@ -3,7 +3,6 @@ from future import standard_library
 standard_library.install_hooks()
 from future.builtins import object
 import json
-import urlparse
 import django
 from django.http import HttpResponseRedirect, QueryDict
 from django.utils.translation import ugettext as _
