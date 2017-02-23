@@ -8,7 +8,6 @@ from django.http import HttpResponseRedirect, QueryDict
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView
 from django.core.exceptions import ObjectDoesNotExist
-from .oauth2.models import Client
 from . import constants, scope
 
 try:
@@ -25,6 +24,7 @@ def HttpResponse(content, mimetype, **kwargs):
         return django.http.HttpResponse(content, content_type=mimetype, **kwargs)
     else:
         return django.http.HttpResponse(content, mimetype=mimetype, **kwargs)
+
 
 class OAuthError(Exception):
     """
@@ -325,6 +325,7 @@ class Redirect(OAuthView, Mixin):
         client = self.get_data(request, "client")
 
         # client must be properly deserialized to become a valid instance
+        from .oauth2.models import Client
         client = Client.deserialize(client)
 
         # this is an edge case that is caused by making a request with no data
